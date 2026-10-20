@@ -19,7 +19,7 @@ export default function App() {
   useEffect(() => {
     Promise.all(
       SAMPLE_FILES.map(async (file) => {
-        const res = await fetch(`/samples/${file}`);
+        const res = await fetch(`${import.meta.env.BASE_URL}samples/${file}`);
         return parseGpx(await res.text(), file);
       }),
     )
