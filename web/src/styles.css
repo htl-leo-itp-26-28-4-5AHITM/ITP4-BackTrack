@@ -1,0 +1,165 @@
+:root {
+  --anthracite: #12161c;
+  --orange: #ff5a1f;
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --text: #12161c;
+  --muted: #5d6573;
+  --border: #e1e4ea;
+  --pitch: #2f7a3e;
+  font-family: 'Archivo', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0e12;
+    --surface: #12161c;
+    --text: #eef0f3;
+    --muted: #9aa3b0;
+    --border: #262c36;
+    --pitch: #23592f;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.5rem;
+  background: var(--anthracite);
+}
+
+.logo {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.logo span {
+  color: var(--orange);
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: var(--orange);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+section + section {
+  margin-top: 2.5rem;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.section-head h2 {
+  margin: 0 0.5rem 0 0;
+}
+
+select {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background: #ffe3d8;
+  color: #8a2400;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--orange);
+  border-radius: 8px;
+}
+
+.card span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.card strong {
+  font-size: 1.4rem;
+}
+
+.pitch {
+  position: relative;
+  aspect-ratio: 105 / 68;
+  background: var(--pitch);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pitch-lines,
+.pitch-heat {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pitch-lines {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 0.3;
+}
+
+.comparison {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.chart-box {
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.chart-box h3 {
+  margin-top: 0;
+}
