@@ -7,13 +7,13 @@ export interface HeatPoint {
   value: number;
 }
 
-// Farbverlauf von wenig (transparent/blau) bis viel (Orange/Rot).
+// Von wenig (durchsichtig) über Bernstein bis Markenorange und Rot.
 const GRADIENT: [number, string][] = [
-  [0.0, 'rgba(0,0,255,0)'],
-  [0.25, '#2b83ff'],
-  [0.5, '#2bd96b'],
-  [0.75, '#ffd21f'],
-  [1.0, '#ff3d00'],
+  [0.0, 'rgba(255,214,160,0)'],
+  [0.2, 'rgba(255,214,160,0.55)'],
+  [0.45, '#ffb15c'],
+  [0.7, '#ff5a1f'],
+  [1.0, '#d61f00'],
 ];
 
 let palette: Uint8ClampedArray | undefined;
@@ -41,7 +41,7 @@ export function drawHeatmap(
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
   ctx.clearRect(0, 0, width, height);
 
-  // 1. Intensität als Graustufen-Alpha aufaddieren.
+  // 1. Intensität als Alpha aufaddieren.
   for (const p of points) {
     const alpha = Math.min(1, p.value / options.max);
     const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, options.radius);
@@ -53,7 +53,7 @@ export function drawHeatmap(
 
   // 2. Alpha-Wert über die Farbpalette einfärben.
   const colors = getPalette();
-  const maxOpacity = options.maxOpacity ?? 0.8;
+  const maxOpacity = options.maxOpacity ?? 0.9;
   const image = ctx.getImageData(0, 0, width, height);
   const px = image.data;
   for (let i = 0; i < px.length; i += 4) {
@@ -62,7 +62,7 @@ export function drawHeatmap(
     px[i] = colors[a * 4];
     px[i + 1] = colors[a * 4 + 1];
     px[i + 2] = colors[a * 4 + 2];
-    px[i + 3] = Math.min(a * 1.5, 255 * maxOpacity);
+    px[i + 3] = Math.min(colors[a * 4 + 3], 255 * maxOpacity);
   }
   ctx.putImageData(image, 0, 0);
 }
