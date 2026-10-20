@@ -4,16 +4,25 @@ import PitchHeatmap from '../components/PitchHeatmap';
 import ZoneBars from '../components/ZoneBars';
 import { SpeedHrChart } from '../components/Charts';
 import { fmt } from '../lib/format';
+import { rank } from '../lib/metrics';
 
 interface Props {
   track: Track;
   metrics: Metrics;
+  all: Metrics[]; // alle Spieler der Session, für den Team-Rang
   tracks: Track[];
   onSelect: (id: string) => void;
 }
 
-export default function PlayerPage({ track, metrics: m, tracks, onSelect }: Props) {
+export default function PlayerPage({ track, metrics: m, all, tracks, onSelect }: Props) {
   const p = track.player;
+  // Ab zwei Spielern: "Platz 2 von 4" unter den Kennzahlen
+  const place = (get: (x: Metrics) => number | undefined) => {
+    const v = get(m);
+    if (all.length < 2 || v === undefined) return '';
+    const values = all.map(get).filter((x): x is number => x !== undefined);
+    return ` · Platz ${rank(v, values)} von ${values.length}`;
+  };
   return (
     <div className="page">
       <section className="player-head">
@@ -38,10 +47,10 @@ export default function PlayerPage({ track, metrics: m, tracks, onSelect }: Prop
       </section>
 
       <div className="stats stats-4">
-        <Stat label="Strecke" value={fmt.km(m.distanceKm)} unit="km" note={`${fmt.int(m.metersPerMin)} m/min`} accent />
-        <Stat label="Top-Speed" value={fmt.kmh(m.maxSpeedKmh)} unit="km/h" note={`Ø ${fmt.kmh(m.avgSpeedKmh)} km/h`} />
-        <Stat label="Puls" value={fmt.bpm(m.avgHr)} unit="bpm Ø" note={`max. ${fmt.bpm(m.maxHr)} bpm`} />
-        <Stat label="Sprints" value={fmt.int(m.sprints)} note={`${m.accelerations} Antritte · ${m.decelerations} Abstopper`} />
+        <Stat label="Strecke" value={fmt.km(m.distanceKm)} unit="km" note={`${fmt.int(m.metersPerMin)} m/min${place((x) => x.distanceKm)}`} accent />
+        <Stat label="Top-Speed" value={fmt.kmh(m.maxSpeedKmh)} unit="km/h" note={`Ø ${fmt.kmh(m.avgSpeedKmh)} km/h${place((x) => x.maxSpeedKmh)}`} />
+        <Stat label="Puls" value={fmt.bpm(m.avgHr)} unit="bpm Ø" note={`max. ${fmt.bpm(m.maxHr)} bpm${place((x) => x.avgHr)}`} />
+        <Stat label="Sprints" value={fmt.int(m.sprints)} note={`${m.accelerations} Antritte · ${m.decelerations} Abstopper${place((x) => x.sprints)}`} />
       </div>
 
       <section className="panel">

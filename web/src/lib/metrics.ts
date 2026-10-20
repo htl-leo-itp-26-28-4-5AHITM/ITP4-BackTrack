@@ -163,3 +163,8 @@ function perMinute(samples: Sample[], start: number) {
 function sum(values: number[]) {
   return values.reduce((a, b) => a + b, 0);
 }
+
+// Platz des Spielers im Team für einen Wert (1 = bester).
+export function rank(value: number, all: number[]) {
+  return 1 + all.filter((v) => v > value).length;
+}

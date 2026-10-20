@@ -3,8 +3,9 @@ import type { Metrics, Track } from '../types';
 import Stat from '../components/Stat';
 import PitchHeatmap from '../components/PitchHeatmap';
 import { DistanceChart } from '../components/Charts';
-import { ArrowIcon } from '../components/Icons';
+import { ArrowIcon, DownloadIcon } from '../components/Icons';
 import { fmt } from '../lib/format';
+import { download, teamCsv } from '../lib/csv';
 
 interface Props {
   tracks: Track[];
@@ -58,6 +59,13 @@ export default function Overview({ tracks, metrics, onOpen }: Props) {
         <header className="panel-head">
           <h2>Spieler</h2>
           <p className="muted">Sortieren über die Spaltenköpfe. Ein Klick auf eine Zeile öffnet die Details.</p>
+          <button
+            className="btn"
+            onClick={() => download('backtrack-team.csv', teamCsv(sorted.map((r) => r.track), metrics))}
+          >
+            <DownloadIcon />
+            CSV exportieren
+          </button>
         </header>
         <div className="table-wrap">
           <table className="table">

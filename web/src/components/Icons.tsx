@@ -43,3 +43,9 @@ export const ArrowIcon = () => (
     <path d="M5 12h14M13 6l6 6-6 6" />
   </svg>
 );
+
+export const DownloadIcon = () => (
+  <svg {...base} width={16} height={16}>
+    <path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15" />
+  </svg>
+);
