@@ -46,7 +46,8 @@ export default function App() {
         index.players.map(async ({ file, ...player }) => parseGpx(await (await fetch(SAMPLES + file)).text(), file, player)),
       );
       setSession(index.session);
-      setTracks((prev) => [...loaded, ...prev]);
+      // Im Strict Mode läuft der Effekt doppelt, daher nur noch nicht vorhandene Spieler übernehmen.
+      setTracks((prev) => [...loaded.filter((t) => !prev.some((p) => p.id === t.id)), ...prev]);
     }
     load().catch(() => setError('Die Beispieldaten konnten nicht geladen werden. Läuft die Seite über npm run dev?'));
   }, []);
@@ -144,7 +145,7 @@ export default function App() {
           <Overview tracks={tracks} metrics={metrics} onOpen={(id) => go(`spieler-${id}`)} />
         )}
         {player && (
-          <PlayerPage track={player} metrics={metrics.get(player.id)!} tracks={tracks} onSelect={(id) => go(`spieler-${id}`)} />
+          <PlayerPage track={player} metrics={metrics.get(player.id)!} all={[...metrics.values()]} tracks={tracks} onSelect={(id) => go(`spieler-${id}`)} />
         )}
         {tracks.length > 0 && route.page === 'compare' && aId && bId && (
           <ComparePage tracks={tracks} metrics={metrics} aId={aId} bId={bId} onChange={(a, b) => setCompare([a, b])} />

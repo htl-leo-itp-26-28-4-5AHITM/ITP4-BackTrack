@@ -38,6 +38,8 @@ export function drawHeatmap(
   options: { radius: number; max: number; maxOpacity?: number },
 ) {
   const { width, height } = canvas;
+  // Noch nicht sichtbar (z. B. Tab im Hintergrund): nichts zeichnen, getImageData würde sonst abstürzen.
+  if (width === 0 || height === 0) return;
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
   ctx.clearRect(0, 0, width, height);
 
