@@ -265,10 +265,15 @@ a {
 }
 
 .error {
+  margin: 0 0 1.25rem;
   padding: 0.85rem 1rem;
   border-radius: 8px;
   background: var(--accent-soft);
   color: var(--bad);
+}
+
+.error p {
+  margin: 0;
 }
 
 /* ---------- Bausteine ---------- */
@@ -787,6 +792,374 @@ select {
 
 .duel-b div {
   background: var(--second);
+}
+
+/* ---------- Anmeldung ---------- */
+
+.auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.auth-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 2.5rem 3rem;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 85% 10%, #ff5a1f33, transparent 60%),
+    radial-gradient(90% 70% at 0% 100%, #ff5a1f1f, transparent 60%),
+    #12161c;
+  color: #eceef1;
+}
+
+.auth-hero .brand-mark {
+  background: #eceef1;
+  color: #12161c;
+}
+
+.auth-pitch {
+  width: min(100%, 560px);
+  margin: 0 auto;
+  fill: none;
+  stroke: #ffffff2e;
+  stroke-width: 0.35;
+}
+
+.auth-run {
+  stroke: var(--accent);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-dasharray: 160;
+  stroke-dashoffset: 160;
+  animation: run 2.4s 0.3s ease-out forwards;
+}
+
+@keyframes run {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.auth-claim h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 800;
+  font-stretch: 115%;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.auth-claim p {
+  max-width: 34ch;
+  margin: 0.9rem 0 0;
+  color: #aab2bd;
+  font-size: 1.05rem;
+}
+
+.auth-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem max(16px, env(safe-area-inset-right, 0px)) 2.5rem max(16px, env(safe-area-inset-left, 0px));
+}
+
+.auth-card {
+  width: min(100%, 400px);
+}
+
+.auth-card h1 {
+  margin-top: 2rem;
+  font-size: 1.9rem;
+  font-weight: 800;
+  font-stretch: 110%;
+  letter-spacing: -0.02em;
+}
+
+.auth-card > .muted {
+  margin: 0.4rem 0 1.75rem;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--sunken);
+}
+
+.auth-tabs button {
+  padding: 0.55rem;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-tabs button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px #0000001a;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-form .error {
+  margin: 0;
+}
+
+.roles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.roles legend {
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.role {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.role input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.role:hover {
+  border-color: var(--muted);
+}
+
+.role.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.role:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.field input {
+  padding: 0.75rem 0.9rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 1rem;
+  font-weight: 400;
+  transition: border-color 0.15s;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.btn-primary {
+  margin-top: 0.4rem;
+  padding: 0.85rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.08);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.auth-foot {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Konto und Upload ---------- */
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.account-who {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.icon-btn {
+  display: flex;
+  padding: 0.45rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--sunken);
+  color: var(--ink);
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 4rem 1.5rem;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dropzone:hover,
+.dropzone.over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.dropzone strong {
+  font-size: 1.15rem;
+}
+
+.dropzone .muted {
+  max-width: 44ch;
+}
+
+.dropzone-icon {
+  display: flex;
+  padding: 0.9rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.btn-inline {
+  margin: 0.6rem 0 0;
+}
+
+.center {
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .auth {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .auth-hero {
+    padding: 1.5rem max(16px, env(safe-area-inset-left, 0px));
+  }
+
+  .auth-pitch,
+  .auth-claim p {
+    display: none;
+  }
+
+  .auth-claim h2 {
+    font-size: 1.6rem;
+  }
+
+  .account {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+    margin-left: auto;
+  }
+
+  .account-who {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-run {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
 }
 
 /* ---------- Schmale Bildschirme ---------- */

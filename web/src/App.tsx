@@ -1,20 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Player, Track } from './types';
-import { parseGpx } from './lib/gpx';
+import type { Track } from './types';
 import { computeMetrics } from './lib/metrics';
 import { fmt } from './lib/format';
-import { CompareIcon, PitchIcon, PlayerIcon, UploadIcon } from './components/Icons';
+import { currentUser, logout, type User } from './lib/auth';
+import { importFiles, type SessionInfo } from './lib/import';
+import { CompareIcon, LogoutIcon, PitchIcon, PlayerIcon, UploadIcon } from './components/Icons';
+import UploadZone from './components/UploadZone';
+import LoginPage from './pages/LoginPage';
 import Overview from './pages/Overview';
 import PlayerPage from './pages/PlayerPage';
 import ComparePage from './pages/ComparePage';
 
-// Beispieldaten in public/samples, erzeugt mit `npm run samples`.
-const SAMPLES = `${import.meta.env.BASE_URL}samples/`;
-
-interface SampleIndex {
-  session: { title: string; kind: string; place: string };
-  players: (Player & { file: string })[];
-}
+// Beispiel-ZIP in public/samples: die GPX-Dateien plus index.json mit Spielernamen und Rückennummern.
+const SAMPLE_ZIP = `${import.meta.env.BASE_URL}samples/beispiel-training.zip`;
 
 // Seiten über den Hash in der Adresse: #uebersicht, #spieler-<id>, #vergleich
 type Route = { page: 'overview' } | { page: 'player'; id?: string } | { page: 'compare' };
@@ -27,9 +25,27 @@ function readRoute(): Route {
 }
 
 export default function App() {
+  const [user, setUser] = useState<User | undefined>(currentUser);
+
+  if (!user) return <LoginPage onLogin={setUser} />;
+  return (
+    <Dashboard
+      user={user}
+      onLogout={() => {
+        logout();
+        setUser(undefined);
+        window.location.hash = '';
+      }}
+    />
+  );
+}
+
+function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
+  // Nach dem Anmelden ist noch nichts geladen, bis es eine Datenbank gibt.
   const [tracks, setTracks] = useState<Track[]>([]);
-  const [session, setSession] = useState<SampleIndex['session']>();
-  const [error, setError] = useState<string>();
+  const [session, setSession] = useState<SessionInfo>();
+  const [errors, setErrors] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
   const [route, setRoute] = useState<Route>(readRoute);
   const [compare, setCompare] = useState<[string, string]>();
 
@@ -39,28 +55,22 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  useEffect(() => {
-    async function load() {
-      const index: SampleIndex = await (await fetch(`${SAMPLES}index.json`)).json();
-      const loaded = await Promise.all(
-        index.players.map(async ({ file, ...player }) => parseGpx(await (await fetch(SAMPLES + file)).text(), file, player)),
-      );
-      setSession(index.session);
-      // Im Strict Mode läuft der Effekt doppelt, daher nur noch nicht vorhandene Spieler übernehmen.
-      setTracks((prev) => [...loaded.filter((t) => !prev.some((p) => p.id === t.id)), ...prev]);
-    }
-    load().catch(() => setError('Die Beispieldaten konnten nicht geladen werden. Läuft die Seite über npm run dev?'));
-  }, []);
+  async function addFiles(files: File[]) {
+    if (!files.length) return;
+    setBusy(true);
+    const result = await importFiles(files);
+    setBusy(false);
+    setErrors(result.errors);
+    if (result.session) setSession(result.session);
+    if (!result.tracks.length) return;
+    setTracks((prev) => [...prev, ...result.tracks.filter((t) => !prev.some((p) => p.id === t.id))]);
+    // Ein einzelner Spieler: gleich seine Seite öffnen, sonst die Übersicht.
+    go(result.tracks.length === 1 ? `spieler-${result.tracks[0].id}` : 'uebersicht');
+  }
 
-  async function importFiles(files: File[]) {
-    try {
-      const imported = await Promise.all(files.map(async (f) => parseGpx(await f.text(), f.name)));
-      setTracks((prev) => [...prev, ...imported.filter((t) => !prev.some((p) => p.id === t.id))]);
-      setError(undefined);
-      if (imported[0]) go(`spieler-${imported[0].id}`);
-    } catch (err) {
-      setError((err as Error).message);
-    }
+  async function loadSample() {
+    const blob = await (await fetch(SAMPLE_ZIP)).blob();
+    addFiles([new File([blob], 'beispiel-training.zip')]);
   }
 
   function go(hash: string) {
@@ -72,6 +82,7 @@ export default function App() {
   const start = tracks[0]?.points[0].time;
   const player = route.page === 'player' ? (tracks.find((t) => t.id === route.id) ?? tracks[0]) : undefined;
   const [aId, bId] = compare ?? [tracks[0]?.id, tracks[1]?.id ?? tracks[0]?.id];
+  const empty = tracks.length === 0;
 
   const nav = [
     { key: 'overview', hash: 'uebersicht', label: 'Übersicht', icon: <PitchIcon /> },
@@ -80,6 +91,12 @@ export default function App() {
   ];
 
   const titles = { overview: 'Übersicht', player: 'Spieleranalyse', compare: 'Spielervergleich' };
+  const initials = user.name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div className="shell">
@@ -93,61 +110,98 @@ export default function App() {
           </span>
         </a>
 
-        <nav className="nav">
-          {nav.map((n) => (
-            <a key={n.key} href={`#${n.hash}`} className={route.page === n.key ? 'nav-item active' : 'nav-item'}>
-              {n.icon}
-              <span>{n.label}</span>
-            </a>
-          ))}
-        </nav>
+        {!empty && (
+          <nav className="nav">
+            {nav.map((n) => (
+              <a key={n.key} href={`#${n.hash}`} className={route.page === n.key ? 'nav-item active' : 'nav-item'}>
+                {n.icon}
+                <span>{n.label}</span>
+              </a>
+            ))}
+          </nav>
+        )}
 
-        <label className="import">
-          <UploadIcon />
-          <span>GPX importieren</span>
-          <input
-            id="gpx-import"
-            type="file"
-            accept=".gpx"
-            multiple
-            hidden
-            onChange={(e) => {
-              importFiles(Array.from(e.target.files ?? []));
-              e.target.value = '';
-            }}
-          />
-        </label>
+        {!empty && (
+          <label className="import">
+            <UploadIcon />
+            <span>Daten hinzufügen</span>
+            <input
+              type="file"
+              accept=".gpx,.zip"
+              multiple
+              hidden
+              onChange={(e) => {
+                addFiles(Array.from(e.target.files ?? []));
+                e.target.value = '';
+              }}
+            />
+          </label>
+        )}
 
-        <p className="sidebar-note">Beispieldaten aus Sportuhren (GPX), bis der eigene Tracker fertig ist.</p>
+        <div className="account">
+          <span className="avatar" aria-hidden>
+            {initials}
+          </span>
+          <span className="account-who">
+            <strong>{user.name}</strong>
+            <span className="muted small">{user.role === 'trainer' ? 'Trainer' : 'Spieler'}</span>
+          </span>
+          <button className="icon-btn" onClick={onLogout} aria-label="Abmelden" title="Abmelden">
+            <LogoutIcon />
+          </button>
+        </div>
       </aside>
 
       <main className="main">
         <header className="topline">
           <div>
             <p className="eyebrow">
-              {session ? `${session.title} · ${session.kind}` : 'Session'}
-              {start && ` · ${fmt.date(start)}, ${fmt.time(start)} Uhr`}
+              {empty
+                ? `Hallo ${user.name.split(' ')[0]}`
+                : `${session ? `${session.title} · ${session.kind}` : 'Eigene Daten'}${start ? ` · ${fmt.date(start)}, ${fmt.time(start)} Uhr` : ''}`}
             </p>
-            <h1>{titles[route.page]}</h1>
+            <h1>{empty ? 'Daten hochladen' : titles[route.page]}</h1>
           </div>
-          {session && <span className="chip">{session.place}</span>}
+          {session && !empty && <span className="chip">{session.place}</span>}
         </header>
 
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
+        {errors.length > 0 && (
+          <div className="error" role="alert">
+            {errors.map((e) => (
+              <p key={e}>{e}</p>
+            ))}
+          </div>
         )}
 
-        {tracks.length === 0 && !error && <p className="muted">Daten werden geladen …</p>}
+        {empty && (
+          <div className="page">
+            <UploadZone onFiles={addFiles} busy={busy} />
+            <p className="muted center">
+              Noch keine Datei zur Hand?{' '}
+              <button className="link" onClick={loadSample}>
+                Beispiel-Training laden
+              </button>{' '}
+              oder{' '}
+              <a className="link" href={SAMPLE_ZIP} download>
+                Beispiel-ZIP herunterladen
+              </a>
+            </p>
+          </div>
+        )}
 
-        {tracks.length > 0 && route.page === 'overview' && (
+        {!empty && route.page === 'overview' && (
           <Overview tracks={tracks} metrics={metrics} onOpen={(id) => go(`spieler-${id}`)} />
         )}
-        {player && (
-          <PlayerPage track={player} metrics={metrics.get(player.id)!} all={[...metrics.values()]} tracks={tracks} onSelect={(id) => go(`spieler-${id}`)} />
+        {!empty && player && (
+          <PlayerPage
+            track={player}
+            metrics={metrics.get(player.id)!}
+            all={[...metrics.values()]}
+            tracks={tracks}
+            onSelect={(id) => go(`spieler-${id}`)}
+          />
         )}
-        {tracks.length > 0 && route.page === 'compare' && aId && bId && (
+        {!empty && route.page === 'compare' && aId && bId && (
           <ComparePage tracks={tracks} metrics={metrics} aId={aId} bId={bId} onChange={(a, b) => setCompare([a, b])} />
         )}
       </main>

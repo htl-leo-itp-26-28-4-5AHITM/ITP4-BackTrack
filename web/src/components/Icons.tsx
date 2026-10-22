@@ -49,3 +49,23 @@ export const DownloadIcon = () => (
     <path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15" />
   </svg>
 );
+
+export const WhistleIcon = () => (
+  <svg {...base}>
+    <path d="M9 4h6v4M4 15a5 5 0 105-5h12v4h-5" />
+    <circle cx="9" cy="15" r="1.5" />
+  </svg>
+);
+
+export const LogoutIcon = () => (
+  <svg {...base} width={16} height={16}>
+    <path d="M15 4h3.5A1.5 1.5 0 0120 5.5v13a1.5 1.5 0 01-1.5 1.5H15M10 16l-4-4 4-4M6 12h10" />
+  </svg>
+);
+
+export const ZipIcon = () => (
+  <svg {...base} width={28} height={28}>
+    <path d="M14 3H6.5A1.5 1.5 0 005 4.5v15A1.5 1.5 0 006.5 21h11a1.5 1.5 0 001.5-1.5V8z" />
+    <path d="M14 3v5h5M10 5h1M10 8h1M10 11h1M10 14h1v3h-1z" />
+  </svg>
+);
