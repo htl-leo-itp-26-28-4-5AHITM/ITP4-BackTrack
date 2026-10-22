@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { login, register, type Role, type User } from '../lib/auth';
 import { PlayerIcon, WhistleIcon } from '../components/Icons';
+import AuthSlides from '../components/AuthSlides';
 
 type Mode = 'login' | 'register';
 
@@ -44,8 +45,8 @@ export default function LoginPage({ onLogin }: { onLogin: (user: User) => void }
 
   return (
     <div className="auth">
-      <section className="auth-hero" aria-hidden>
-        <div className="brand">
+      <section className="auth-hero">
+        <div className="brand" aria-hidden>
           <span className="brand-mark">
             B<span>T</span>
           </span>
@@ -53,18 +54,7 @@ export default function LoginPage({ onLogin }: { onLogin: (user: User) => void }
             Back<span>Track</span>
           </span>
         </div>
-        <svg viewBox="0 0 105 68" className="auth-pitch">
-          <rect x="0.2" y="0.2" width="104.6" height="67.6" />
-          <line x1="52.5" y1="0" x2="52.5" y2="68" />
-          <circle cx="52.5" cy="34" r="9.15" />
-          <rect x="0" y="13.84" width="16.5" height="40.32" />
-          <rect x="88.5" y="13.84" width="16.5" height="40.32" />
-          <path className="auth-run" d="M14 50 C 28 44, 30 22, 44 20 S 62 38, 70 30 S 86 14, 92 24" />
-        </svg>
-        <div className="auth-claim">
-          <h2>Jeder Lauf zählt.</h2>
-          <p>Strecke, Sprints, Puls und Heatmap für jeden Spieler, nach jedem Training und Spiel.</p>
-        </div>
+        <AuthSlides />
       </section>
 
       <section className="auth-panel">

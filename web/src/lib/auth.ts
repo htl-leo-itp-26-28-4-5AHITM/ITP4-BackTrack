@@ -43,27 +43,55 @@ export function currentUser(): User | undefined {
   return read<User | undefined>(SESSION, undefined);
 }
 
-export async function register(user: User, password: string): Promise<User> {
-  const email = user.email.trim().toLowerCase();
-  const users = read<StoredUser[]>(USERS, []);
-  if (users.some((u) => u.email === email)) throw new Error('Mit dieser E-Mail gibt es schon ein Konto.');
-  const stored = { ...user, name: user.name.trim(), email, passHash: await hash(password) };
-  write(USERS, [...users, stored]);
-  const session = { name: stored.name, email, role: stored.role };
+// Pro E-Mail kann es je ein Trainer- und ein Spielerkonto geben (Trainer, der selbst mitspielt).
+const find = (users: StoredUser[], email: string, role: Role) =>
+  users.find((u) => u.email === email.trim().toLowerCase() && u.role === role);
+
+function startSession(u: StoredUser): User {
+  const session = { name: u.name, email: u.email, role: u.role };
   write(SESSION, session);
   return session;
 }
 
+export async function register(user: User, password: string): Promise<User> {
+  const email = user.email.trim().toLowerCase();
+  const users = read<StoredUser[]>(USERS, []);
+  if (find(users, email, user.role)) {
+    throw new Error(`Mit dieser E-Mail gibt es schon ein ${user.role === 'trainer' ? 'Trainer' : 'Spieler'}konto.`);
+  }
+  const stored = { ...user, name: user.name.trim(), email, passHash: await hash(password) };
+  write(USERS, [...users, stored]);
+  return startSession(stored);
+}
+
 export async function login(email: string, password: string, role: Role): Promise<User> {
   const users = read<StoredUser[]>(USERS, []);
-  const found = users.find((u) => u.email === email.trim().toLowerCase());
-  if (!found || found.passHash !== (await hash(password))) throw new Error('E-Mail oder Passwort stimmt nicht.');
-  if (found.role !== role) {
-    throw new Error(`Dieses Konto ist als ${found.role === 'trainer' ? 'Trainer' : 'Spieler'} registriert.`);
+  const found = find(users, email, role);
+  if (!found) {
+    const other = find(users, email, role === 'trainer' ? 'spieler' : 'trainer');
+    if (other) throw new Error(`Diese E-Mail hat nur ein ${other.role === 'trainer' ? 'Trainer' : 'Spieler'}konto.`);
+    throw new Error('E-Mail oder Passwort stimmt nicht.');
   }
-  const session = { name: found.name, email: found.email, role: found.role };
-  write(SESSION, session);
-  return session;
+  if (found.passHash !== (await hash(password))) throw new Error('E-Mail oder Passwort stimmt nicht.');
+  return startSession(found);
+}
+
+export function hasAccount(email: string, role: Role) {
+  return Boolean(find(read<StoredUser[]>(USERS, []), email, role));
+}
+
+// Trainer legt sich mit derselben E-Mail und demselben Passwort ein Spielerkonto an.
+export function createPlayerAccount(trainer: User) {
+  const users = read<StoredUser[]>(USERS, []);
+  const own = find(users, trainer.email, 'trainer');
+  if (!own || find(users, trainer.email, 'spieler')) return;
+  write(USERS, [...users, { ...own, role: 'spieler' }]);
+}
+
+// Wechsel zwischen den beiden Konten derselben E-Mail, ohne neu anzumelden.
+export function switchRole(user: User, role: Role): User | undefined {
+  const other = find(read<StoredUser[]>(USERS, []), user.email, role);
+  return other && startSession(other);
 }
 
 export function logout() {

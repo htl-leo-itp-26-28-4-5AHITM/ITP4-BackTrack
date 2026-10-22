@@ -823,30 +823,173 @@ select {
   color: #12161c;
 }
 
-.auth-pitch {
+.slides {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.slides-stage {
+  position: relative;
   width: min(100%, 560px);
-  margin: 0 auto;
+  aspect-ratio: 107 / 70;
+  margin: auto;
+}
+
+.slide-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
   fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transform: translateX(6%) scale(0.96);
+  filter: blur(6px);
+  transition:
+    opacity 0.8s ease,
+    transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.8s ease;
+}
+
+.slide-art.active {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+.slide-art .lines {
   stroke: #ffffff2e;
   stroke-width: 0.35;
 }
 
-.auth-run {
-  stroke: var(--accent);
-  stroke-width: 0.9;
-  stroke-linecap: round;
-  stroke-dasharray: 160;
-  stroke-dashoffset: 160;
-  animation: run 2.4s 0.3s ease-out forwards;
+.slide-art .goal {
+  fill: #ffffff55;
+  stroke: none;
 }
 
-@keyframes run {
+.slide-art .dot {
+  fill: #ffffff40;
+}
+
+.slide-art .zones rect {
+  stroke: none;
+}
+
+.slide-art .z5 {
+  fill: #ff5a1f2e;
+}
+
+.slide-art .z4 {
+  fill: #ff5a1f17;
+}
+
+.slide-art .z3 {
+  fill: #ffffff08;
+}
+
+.slide-art .draw {
+  stroke: var(--accent);
+  stroke-width: 0.9;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 1.2px #ff5a1f99);
+}
+
+.slide-art .draw.dashed {
+  stroke-dasharray: 1;
+}
+
+.slide-art.active .draw {
+  animation: draw 2.2s 0.35s ease-out forwards;
+}
+
+.slide-art .pop {
+  fill: var(--accent);
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0);
+}
+
+.slide-art .ball {
+  fill: #eceef1;
+}
+
+.slide-art.active .pop {
+  animation: pop 0.5s 1.6s cubic-bezier(0.3, 1.6, 0.5, 1) forwards, pulse 1.6s 2.2s ease-in-out infinite;
+}
+
+.slide-art .tag {
+  fill: #aab2bd;
+  stroke: none;
+  font-family: var(--mono);
+  font-size: 3px;
+  opacity: 0;
+}
+
+.slide-art .tag-accent {
+  fill: var(--accent);
+  font-weight: 500;
+}
+
+.slide-art.active .tag {
+  animation: fade-up 0.6s 1.9s ease-out forwards;
+}
+
+@keyframes draw {
   to {
     stroke-dashoffset: 0;
   }
 }
 
-.auth-claim h2 {
+@keyframes pop {
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    transform: scale(1.35);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.slides-text {
+  display: grid;
+}
+
+.slide-claim {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+.slide-claim.active {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.15s;
+}
+
+.slide-claim h2 {
   font-size: clamp(2rem, 4vw, 3.2rem);
   font-weight: 800;
   font-stretch: 115%;
@@ -854,11 +997,54 @@ select {
   line-height: 1;
 }
 
-.auth-claim p {
-  max-width: 34ch;
+.slide-claim h2 span {
+  color: var(--accent);
+}
+
+.slide-claim p {
+  max-width: 36ch;
   margin: 0.9rem 0 0;
   color: #aab2bd;
   font-size: 1.05rem;
+}
+
+.slides-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.slides-dots button {
+  width: 34px;
+  height: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: #ffffff26;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.slides-dots span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.slides-dots .active span {
+  animation: progress linear forwards;
+}
+
+.slides-dots .paused span {
+  animation-play-state: paused;
+}
+
+@keyframes progress {
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .auth-panel {
@@ -1134,12 +1320,17 @@ select {
     padding: 1.5rem max(16px, env(safe-area-inset-left, 0px));
   }
 
-  .auth-pitch,
-  .auth-claim p {
+  .slides-stage,
+  .slide-claim p,
+  .slides-dots {
     display: none;
   }
 
-  .auth-claim h2 {
+  .slides {
+    margin-top: 1rem;
+  }
+
+  .slide-claim h2 {
     font-size: 1.6rem;
   }
 
@@ -1156,9 +1347,209 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-run {
+  .slide-art,
+  .slide-claim {
+    transition: opacity 0.4s ease;
+    transform: none;
+    filter: none;
+  }
+
+  .slide-art.active .draw,
+  .slide-art.active .pop,
+  .slide-art.active .tag {
     animation: none;
     stroke-dashoffset: 0;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- Teams, Kader, Rollen ---------- */
+
+.account {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.role-switch {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--sunken);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.role-switch:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.team-pick select {
+  width: 100%;
+  font-weight: 700;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.top-actions .btn {
+  margin: 0;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  color: var(--bad);
+}
+
+.btn-danger:hover {
+  border-color: var(--bad);
+  background: var(--accent-soft);
+  color: var(--bad);
+}
+
+.icon-btn.danger:hover {
+  background: var(--accent-soft);
+  color: var(--bad);
+}
+
+.table tbody tr.static {
+  cursor: default;
+}
+
+.table tbody tr.static:hover {
+  background: none;
+}
+
+.inline-input {
+  width: 100%;
+  min-width: 180px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--sunken);
+}
+
+.inline-input:focus {
+  border-color: var(--accent);
+  outline: none;
+  background: var(--surface);
+}
+
+.team-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.team-row .btn {
+  margin: 0;
+}
+
+.team-row .btn-primary {
+  margin: 0;
+  padding-inline: 1.5rem;
+}
+
+.grow {
+  flex: 1;
+  min-width: 180px;
+}
+
+.add-member {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line);
+}
+
+.add-member input {
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.add-member .btn {
+  margin: 0;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.list li:last-child {
+  border-bottom: 0;
+}
+
+.create-team,
+.empty-note {
+  max-width: 640px;
+}
+
+.create-team .muted,
+.empty-note .muted {
+  margin: 0 0 1.25rem;
+}
+
+.empty-note h2 {
+  margin-bottom: 0.6rem;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 900px) {
+  .team-pick {
+    order: 2;
+  }
+
+  .account {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .role-switch {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .add-member {
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+
+  .add-member input[name='position'],
+  .add-member input[name='email'],
+  .add-member .btn {
+    grid-column: 1 / -1;
   }
 }
 

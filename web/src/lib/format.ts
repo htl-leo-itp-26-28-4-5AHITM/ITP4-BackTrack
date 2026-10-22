@@ -9,5 +9,6 @@ export const fmt = {
   min: (v: number) => num(0).format(v),
   date: (ms: number) =>
     new Intl.DateTimeFormat('de-AT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(ms),
+  short: (ms: number) => new Intl.DateTimeFormat('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(ms),
   time: (ms: number) => new Intl.DateTimeFormat('de-AT', { hour: '2-digit', minute: '2-digit' }).format(ms),
 };

@@ -9,12 +9,13 @@ import { rank } from '../lib/metrics';
 interface Props {
   track: Track;
   metrics: Metrics;
-  all: Metrics[]; // alle Spieler der Session, für den Team-Rang
-  tracks: Track[];
+  all: Metrics[]; // alle Spieler der Einheit, für den Team-Rang (leer = kein Rang)
+  choices: { id: string; label: string }[]; // Auswahl oben rechts: Spieler (Trainer) oder Einheiten (Spieler)
+  value: string;
   onSelect: (id: string) => void;
 }
 
-export default function PlayerPage({ track, metrics: m, all, tracks, onSelect }: Props) {
+export default function PlayerPage({ track, metrics: m, all, choices, value, onSelect }: Props) {
   const p = track.player;
   // Ab zwei Spielern: "Platz 2 von 4" unter den Kennzahlen
   const place = (get: (x: Metrics) => number | undefined) => {
@@ -34,12 +35,11 @@ export default function PlayerPage({ track, metrics: m, all, tracks, onSelect }:
           </p>
         </div>
         <label className="select">
-          <span className="sr-only">Spieler wählen</span>
-          <select id="player-select" value={track.id} onChange={(e) => onSelect(e.target.value)}>
-            {tracks.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.player.number ? `${t.player.number} · ` : ''}
-                {t.player.name}
+          <span className="sr-only">Auswahl</span>
+          <select id="player-select" value={value} onChange={(e) => onSelect(e.target.value)}>
+            {choices.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
               </option>
             ))}
           </select>

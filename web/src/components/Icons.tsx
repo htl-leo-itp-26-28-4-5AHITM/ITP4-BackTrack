@@ -63,6 +63,19 @@ export const LogoutIcon = () => (
   </svg>
 );
 
+export const TrashIcon = () => (
+  <svg {...base} width={16} height={16}>
+    <path d="M4 7h16M9.5 7V4.5h5V7M6 7l1 13h10l1-13M10 11v5M14 11v5" />
+  </svg>
+);
+
+export const TeamIcon = () => (
+  <svg {...base}>
+    <circle cx="9" cy="8" r="3" />
+    <path d="M3.5 19a5.5 5.5 0 0111 0M16 5.5a3 3 0 010 5.5M17.5 14a5 5 0 013 5" />
+  </svg>
+);
+
 export const ZipIcon = () => (
   <svg {...base} width={28} height={28}>
     <path d="M14 3H6.5A1.5 1.5 0 005 4.5v15A1.5 1.5 0 006.5 21h11a1.5 1.5 0 001.5-1.5V8z" />
