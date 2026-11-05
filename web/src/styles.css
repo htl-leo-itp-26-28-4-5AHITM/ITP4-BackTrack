@@ -1686,3 +1686,60 @@ select {
     transition: none !important;
   }
 }
+
+/* ---------- Team und Vergleichsanfragen (Spieler) ---------- */
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.row-actions .btn {
+  margin: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.btn-accept {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff !important;
+}
+
+.btn-accept:hover {
+  filter: brightness(1.05);
+  color: #fff;
+}
+
+.status {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--sunken);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.status-ok {
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+  color: var(--good);
+}
+
+.status-bad {
+  background: var(--accent-soft);
+  color: var(--bad);
+}
+
+@media (max-width: 600px) {
+  .list li:has(.row-actions) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .row-actions {
+    justify-content: flex-start;
+  }
+}
