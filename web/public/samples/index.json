@@ -1,0 +1,37 @@
+{
+  "session": {
+    "title": "Training",
+    "kind": "Mannschaftstraining U18",
+    "place": "Sportplatz Leonding"
+  },
+  "players": [
+    {
+      "file": "berger-7.gpx",
+      "name": "Lukas Berger",
+      "number": 7,
+      "position": "Flügel",
+      "hrMax": 201
+    },
+    {
+      "file": "huber-10.gpx",
+      "name": "David Huber",
+      "number": 10,
+      "position": "Mittelfeld",
+      "hrMax": 196
+    },
+    {
+      "file": "wagner-4.gpx",
+      "name": "Elias Wagner",
+      "number": 4,
+      "position": "Innenverteidigung",
+      "hrMax": 192
+    },
+    {
+      "file": "mayr-9.gpx",
+      "name": "Jonas Mayr",
+      "number": 9,
+      "position": "Sturm",
+      "hrMax": 204
+    }
+  ]
+}
