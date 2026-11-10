@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Track } from '../types';
 import { computeMetrics } from '../lib/metrics';
 import { fmt } from '../lib/format';
-import { createPlayerAccount, hasAccount, type User } from '../lib/auth';
+import { hasRole, type User } from '../lib/auth';
 import { importFiles } from '../lib/import';
 import { useClub, withMember } from '../lib/club';
 import { db } from '../lib/db';
@@ -23,9 +23,10 @@ interface Props {
   user: User;
   onLogout: () => void;
   onSwitchRole: () => void;
+  onCreatePlayerAccount: () => Promise<void>;
 }
 
-export default function TrainerApp({ user, onLogout, onSwitchRole }: Props) {
+export default function TrainerApp({ user, onLogout, onSwitchRole, onCreatePlayerAccount }: Props) {
   const actions = useClub();
   const { club } = actions;
   const route = useRoute();
@@ -41,10 +42,10 @@ export default function TrainerApp({ user, onLogout, onSwitchRole }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [compare, setCompare] = useState<[string, string]>();
-  const [playerAccount, setPlayerAccount] = useState(() => hasAccount(user.email, 'spieler'));
+  const playerAccount = hasRole(user, 'spieler');
 
   // Jeder Trainer sieht nur seine eigenen Teams.
-  const teams = club?.teams.filter((t) => t.trainer === user.email) ?? [];
+  const teams = club?.teams.filter((t) => t.trainer === user.id) ?? [];
   const team = teams.find((t) => t.id === teamId) ?? teams[0];
   const einheiten = (club?.einheiten.filter((e) => e.teamId === team?.id) ?? []).sort((a, b) => b.start - a.start);
   const einheit = einheiten.find((e) => e.id === einheitId) ?? einheiten[0];
@@ -97,7 +98,7 @@ export default function TrainerApp({ user, onLogout, onSwitchRole }: Props) {
   function newTeam() {
     const name = prompt('Name des neuen Teams', 'U18');
     if (name?.trim()) {
-      const t = actions.addTeam(user.email, name);
+      const t = actions.addTeam(user.id, name);
       setTeamId(t.id);
       setEinheitId(undefined);
       go('uebersicht');
@@ -117,7 +118,7 @@ export default function TrainerApp({ user, onLogout, onSwitchRole }: Props) {
           onSubmit={(e) => {
             e.preventDefault();
             const name = String(new FormData(e.currentTarget).get('name'));
-            setTeamId(actions.addTeam(user.email, name).id);
+            setTeamId(actions.addTeam(user.id, name).id);
           }}
         >
           <p className="muted">Lege für jede Mannschaft, die du trainierst, ein eigenes Team an. Weitere Teams kannst du jederzeit hinzufügen.</p>
@@ -217,6 +218,12 @@ export default function TrainerApp({ user, onLogout, onSwitchRole }: Props) {
         )
       }
     >
+      {actions.error && (
+        <div className="error" role="alert">
+          <p>{actions.error}</p>
+        </div>
+      )}
+
       {errors.length > 0 && (
         <div className="error" role="alert">
           {errors.map((e) => (
@@ -248,10 +255,7 @@ export default function TrainerApp({ user, onLogout, onSwitchRole }: Props) {
           trainerEmail={user.email}
           actions={actions}
           hasPlayerAccount={playerAccount}
-          onCreatePlayerAccount={() => {
-            createPlayerAccount(user);
-            setPlayerAccount(true);
-          }}
+          onCreatePlayerAccount={onCreatePlayerAccount}
           onTeamDeleted={() => {
             setTeamId(undefined);
             setEinheitId(undefined);
@@ -271,7 +275,13 @@ export default function TrainerApp({ user, onLogout, onSwitchRole }: Props) {
         />
       )}
       {tracks.length > 0 && page === 'compare' && aId && bId && (
-        <ComparePage tracks={tracks} metrics={metrics} aId={aId} bId={bId} onChange={(a, b) => setCompare([a, b])} />
+        <ComparePage
+          a={tracks.find((t) => t.id === aId) ?? tracks[0]}
+          b={tracks.find((t) => t.id === bId) ?? tracks[0]}
+          metrics={metrics}
+          optionsA={tracks.map((t) => ({ id: t.id, label: t.player.name }))}
+          onChange={(a, b) => setCompare([a, b])}
+        />
       )}
     </Shell>
   );

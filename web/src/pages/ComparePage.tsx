@@ -3,11 +3,17 @@ import PitchHeatmap from '../components/PitchHeatmap';
 import { CompareSpeedChart } from '../components/Charts';
 import { fmt } from '../lib/format';
 
+export interface Choice {
+  id: string;
+  label: string;
+}
+
 interface Props {
-  tracks: Track[];
-  metrics: Map<string, Metrics>;
-  aId: string;
-  bId: string;
+  a: Track;
+  b: Track;
+  metrics: Map<string, Metrics>; // muss Werte für a und b enthalten
+  optionsA: Choice[]; // Auswahl links
+  optionsB?: Choice[]; // Auswahl rechts, sonst wie links
   onChange: (a: string, b: string) => void;
 }
 
@@ -23,18 +29,16 @@ const ROWS: [string, (m: Metrics) => number, (v: number) => string][] = [
   ['Max. Puls', (m) => m.maxHr ?? 0, (v) => `${fmt.int(v)} bpm`],
 ];
 
-export default function ComparePage({ tracks, metrics, aId, bId, onChange }: Props) {
-  const a = tracks.find((t) => t.id === aId) ?? tracks[0];
-  const b = tracks.find((t) => t.id === bId) ?? tracks[1] ?? tracks[0];
+export default function ComparePage({ a, b, metrics, optionsA, optionsB = optionsA, onChange }: Props) {
   const ma = metrics.get(a.id)!;
   const mb = metrics.get(b.id)!;
 
   return (
     <div className="page">
       <section className="versus">
-        <PlayerPick id="compare-a" tracks={tracks} value={a.id} side="a" onChange={(id) => onChange(id, b.id)} />
+        <PlayerPick id="compare-a" track={a} options={optionsA} side="a" onChange={(id) => onChange(id, b.id)} />
         <span className="vs">vs</span>
-        <PlayerPick id="compare-b" tracks={tracks} value={b.id} side="b" onChange={(id) => onChange(a.id, id)} />
+        <PlayerPick id="compare-b" track={b} options={optionsB} side="b" onChange={(id) => onChange(a.id, id)} />
       </section>
 
       <section className="panel">
@@ -89,19 +93,19 @@ export default function ComparePage({ tracks, metrics, aId, bId, onChange }: Pro
   );
 }
 
-function PlayerPick(props: { id: string; tracks: Track[]; value: string; side: 'a' | 'b'; onChange: (id: string) => void }) {
-  const t = props.tracks.find((x) => x.id === props.value)!;
+function PlayerPick(props: { id: string; track: Track; options: Choice[]; side: 'a' | 'b'; onChange: (id: string) => void }) {
+  const t = props.track;
   return (
     <div className={`pick pick-${props.side}`}>
       <span className="jersey">{t.player.number ?? '–'}</span>
       <div className="pick-body">
         <label htmlFor={props.id} className="muted small">
-          {t.player.position ?? 'Eigene Datei'}
+          {t.player.position ?? t.player.name}
         </label>
-        <select id={props.id} value={props.value} onChange={(e) => props.onChange(e.target.value)}>
-          {props.tracks.map((x) => (
+        <select id={props.id} value={t.id} onChange={(e) => props.onChange(e.target.value)}>
+          {props.options.map((x) => (
             <option key={x.id} value={x.id}>
-              {x.player.name}
+              {x.label}
             </option>
           ))}
         </select>

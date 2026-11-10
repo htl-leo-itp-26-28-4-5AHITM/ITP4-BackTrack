@@ -1,42 +1,29 @@
-import type { Track } from '../types';
+import type { Track, TrackPoint } from '../types';
+import { check, supabase } from './supabase';
 
-// Speicher im Browser (IndexedDB), bis es eine echte Datenbank gibt.
-// GPX-Tracks sind zu groß für localStorage, deshalb IndexedDB.
+// Messdaten liegen in der Tabelle "tracks" (Supabase). Punkte kompakt als [zeit, lat, lon, puls].
+// Welche Tracks jemand laden darf, entscheiden die Regeln in der Datenbank.
 
-const DB = 'backtrack';
-const META = 'meta';
-const TRACKS = 'tracks';
+type Packed = [number, number, number, number | null];
 
-function open(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 1);
-    req.onupgradeneeded = () => {
-      req.result.createObjectStore(META);
-      req.result.createObjectStore(TRACKS, { keyPath: 'id' });
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
+export const pack = (points: TrackPoint[]): Packed[] => points.map((p) => [p.time, p.lat, p.lon, p.hr ?? null]);
+const unpack = (rows: Packed[]): TrackPoint[] =>
+  rows.map(([time, lat, lon, hr]) => (hr == null ? { time, lat, lon } : { time, lat, lon, hr }));
 
-async function tx<T>(store: string, mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T> | void) {
-  const db = await open();
-  return new Promise<T | undefined>((resolve, reject) => {
-    const t = db.transaction(store, mode);
-    const req = run(t.objectStore(store));
-    t.oncomplete = () => resolve(req ? req.result : undefined);
-    t.onerror = () => reject(t.error);
-  });
-}
+// Tracks ändern sich nach dem Hochladen nicht mehr, deshalb im Speicher zwischenspeichern.
+const cache = new Map<string, Track>();
 
 export const db = {
-  getMeta: <T>(key: string) => tx<T>(META, 'readonly', (s) => s.get(key)),
-  setMeta: (key: string, value: unknown) => tx(META, 'readwrite', (s) => void s.put(value, key)),
-
   async getTracks(ids: string[]): Promise<Track[]> {
-    const all = await Promise.all(ids.map((id) => tx<Track>(TRACKS, 'readonly', (s) => s.get(id))));
-    return all.filter((t): t is Track => t !== undefined);
+    const missing = ids.filter((id) => !cache.has(id));
+    if (missing.length) {
+      const rows = check(await supabase.from('tracks').select('id, points').in('id', missing)) as { id: string; points: Packed[] }[];
+      for (const r of rows) cache.set(r.id, { id: r.id, player: { name: '' }, points: unpack(r.points) });
+    }
+    return ids.map((id) => cache.get(id)).filter((t): t is Track => t !== undefined);
   },
-  putTracks: (tracks: Track[]) => tx(TRACKS, 'readwrite', (s) => void tracks.forEach((t) => s.put(t))),
-  deleteTracks: (ids: string[]) => tx(TRACKS, 'readwrite', (s) => void ids.forEach((id) => s.delete(id))),
+
+  forget(ids: string[]) {
+    ids.forEach((id) => cache.delete(id));
+  },
 };
