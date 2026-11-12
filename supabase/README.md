@@ -30,6 +30,12 @@ Webseite umgeht und die Datenbank direkt abfragt.
 | `einheiten`        | Trainings und Spiele                      | Trainer, alle Spieler des Teams                           | Trainer                        |
 | `tracks`           | GPS- und Pulsdaten pro Spieler und Einheit | Trainer, der Spieler selbst, Spieler mit angenommenem Vergleich | Trainer                  |
 | `compare_requests` | Vergleichsanfragen                        | Absender und Empfänger                                    | senden: Absender, annehmen/ablehnen: Empfänger, löschen: beide |
+| `tracking_templates` | Vorlagen: Platz-Eckpunkte, Strafräume, Spieldaten | Ersteller, Trainer und Spieler der zugewiesenen Teams | Ersteller                 |
+| `template_teams`   | Zuweisung Vorlage → Team                  | Trainer und Spieler des Teams                             | Ersteller der Vorlage, nur an eigene Teams |
+| `spiele`           | angelegte Spiele (aus Vorlage), Messdaten hängen als Einheit dran | Ersteller, Trainer des Teams, Spieler bei Team-Spielen | Ersteller          |
+
+Spieler dürfen zusätzlich zu einem Spiel ihres Teams die Einheit anlegen und ihre **eigenen** Tracks
+hochladen (nur einfügen, nicht ändern oder löschen).
 
 Ein Spieler wird über die E-Mail im Kader mit seinem Konto verknüpft. Ein Konto kann Trainer
 und Spieler zugleich sein (Trainer, der selbst mitspielt).

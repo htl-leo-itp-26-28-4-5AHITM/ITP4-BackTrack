@@ -69,6 +69,13 @@ export const TrashIcon = () => (
   </svg>
 );
 
+export const TrackingIcon = () => (
+  <svg {...base}>
+    <circle cx="12" cy="13.5" r="7" />
+    <path d="M12 13.5V10M10 3h4M12 3v3.5M18 7l1.5-1.5" />
+  </svg>
+);
+
 export const TeamIcon = () => (
   <svg {...base}>
     <circle cx="9" cy="8" r="3" />

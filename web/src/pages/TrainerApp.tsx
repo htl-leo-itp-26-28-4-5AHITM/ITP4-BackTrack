@@ -7,13 +7,14 @@ import { importFiles } from '../lib/import';
 import { useClub, withMember } from '../lib/club';
 import { db } from '../lib/db';
 import { go, useRoute } from '../lib/route';
-import { CompareIcon, PitchIcon, PlayerIcon, TeamIcon, UploadIcon } from '../components/Icons';
+import { CompareIcon, PitchIcon, PlayerIcon, TeamIcon, TrackingIcon, UploadIcon } from '../components/Icons';
 import Shell from '../components/Shell';
 import UploadZone from '../components/UploadZone';
 import Overview from './Overview';
 import PlayerPage from './PlayerPage';
 import ComparePage from './ComparePage';
 import KaderPage from './KaderPage';
+import SpielePage from './SpielePage';
 
 // Beispiel-ZIP in public/samples: die GPX-Dateien plus index.json mit Spielernamen und Rückennummern.
 const SAMPLE_ZIP = `${import.meta.env.BASE_URL}samples/beispiel-training.zip`;
@@ -137,7 +138,7 @@ export default function TrainerApp({ user, onLogout, onSwitchRole, onCreatePlaye
   const player = route.page === 'player' ? (tracks.find((t) => t.id === route.id) ?? tracks[0]) : undefined;
   const [aId, bId] = compare ?? [tracks[0]?.id, tracks[1]?.id ?? tracks[0]?.id];
   const empty = !einheit;
-  const page = route.page === 'kader' || !empty ? route.page : 'upload';
+  const page = route.page === 'kader' || route.page === 'spiele' || !empty ? route.page : 'upload';
 
   const nav = [
     ...(empty
@@ -147,12 +148,22 @@ export default function TrainerApp({ user, onLogout, onSwitchRole, onCreatePlaye
           { key: 'player', hash: `spieler-${player?.id ?? tracks[0]?.id ?? ''}`, label: 'Spieler', icon: <PlayerIcon /> },
           { key: 'compare', hash: 'vergleich', label: 'Vergleich', icon: <CompareIcon /> },
         ]),
+    { key: 'spiele', hash: 'spiele', label: 'Spiele', icon: <TrackingIcon /> },
     { key: 'kader', hash: 'kader', label: 'Kader', icon: <TeamIcon /> },
   ];
 
-  const titles = { overview: 'Übersicht', player: 'Spieleranalyse', compare: 'Spielervergleich', kader: 'Kader', upload: 'Daten hochladen' };
+  const titles = {
+    overview: 'Übersicht',
+    player: 'Spieleranalyse',
+    compare: 'Spielervergleich',
+    kader: 'Kader',
+    upload: 'Daten hochladen',
+    spiele: 'Spiele',
+  };
   const eyebrow =
-    page === 'kader' || page === 'upload' || !einheit
+    page === 'spiele'
+      ? 'Vorbereiten, anlegen, Daten hochladen'
+      : page === 'kader' || page === 'upload' || !einheit
       ? team.name
       : [team.name, einheit.title, einheit.kind, `${fmt.date(einheit.start)}, ${fmt.time(einheit.start)} Uhr`].filter(Boolean).join(' · ');
 
@@ -189,6 +200,7 @@ export default function TrainerApp({ user, onLogout, onSwitchRole, onCreatePlaye
       title={titles[page]}
       aside={
         page !== 'kader' &&
+        page !== 'spiele' &&
         !empty && (
           <div className="top-actions">
             {einheiten.length > 1 && (
@@ -246,6 +258,20 @@ export default function TrainerApp({ user, onLogout, onSwitchRole, onCreatePlaye
             </a>
           </p>
         </div>
+      )}
+
+      {page === 'spiele' && (
+        <SpielePage
+          user={user}
+          club={club}
+          teams={teams}
+          importInto={actions.importInto}
+          onOpen={(_game, e) => {
+            setTeamId(e.teamId);
+            setEinheitId(e.id);
+            go('uebersicht');
+          }}
+        />
       )}
 
       {page === 'kader' && (

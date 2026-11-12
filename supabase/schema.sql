@@ -75,6 +75,63 @@ create table if not exists public.compare_requests (
   unique (from_member, to_member)
 );
 
+-- Tracking-Vorlagen: Trainer (oder Spieler für sich selbst) vermessen den Platz und tragen die Spieldaten ein.
+-- pitch: { corners: [[lat, lon] x4], boxes: [[[lat, lon] x4], [[lat, lon] x4]] }
+create table if not exists public.tracking_templates (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null default auth.uid() references public.profiles (id) on delete cascade,
+  title text not null,
+  kind text not null default 'Spiel',
+  opponent text,
+  place text,
+  kickoff_ms bigint,
+  duration_min int,
+  notes text,
+  pitch jsonb not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists tracking_templates_owner_idx on public.tracking_templates (owner_id);
+
+-- Welche Teams eine Vorlage sehen und übernehmen dürfen.
+create table if not exists public.template_teams (
+  template_id uuid not null references public.tracking_templates (id) on delete cascade,
+  team_id uuid not null references public.teams (id) on delete cascade,
+  primary key (template_id, team_id)
+);
+create index if not exists template_teams_team_idx on public.template_teams (team_id);
+
+-- Erste Fassung (Trackings starten) wurde durch "spiele" ersetzt.
+drop table if exists public.trackings;
+
+-- Angelegte Spiele. Die Daten der Vorlage werden kopiert, damit spätere Änderungen an der Vorlage
+-- ein angelegtes Spiel nicht verändern. Nach dem Spiel werden die Messdaten hochgeladen: sie landen
+-- als Einheit (einheiten.spiel_id) mit Tracks im Team.
+-- for_team = true: der Trainer hat das Spiel für das ganze Team angelegt, jeder Spieler lädt seine Daten dazu.
+create table if not exists public.spiele (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null default auth.uid() references public.profiles (id) on delete cascade,
+  template_id uuid references public.tracking_templates (id) on delete set null,
+  team_id uuid references public.teams (id) on delete cascade,
+  for_team boolean not null default false,
+  title text not null,
+  kind text not null default 'Spiel',
+  opponent text,
+  place text,
+  kickoff_ms bigint,
+  duration_min int,
+  notes text,
+  pitch jsonb not null,
+  created_at timestamptz not null default now(),
+  check (not for_team or team_id is not null)
+);
+create index if not exists spiele_owner_idx on public.spiele (owner_id);
+create index if not exists spiele_team_idx on public.spiele (team_id);
+
+-- Einheiten können zu einem Spiel gehören (eine Einheit pro Spiel) und auch von Spielern angelegt werden.
+alter table public.einheiten add column if not exists spiel_id uuid references public.spiele (id) on delete set null;
+alter table public.einheiten add column if not exists created_by uuid default auth.uid() references public.profiles (id) on delete set null;
+create unique index if not exists einheiten_spiel_idx on public.einheiten (spiel_id) where spiel_id is not null;
+
 -- ---------- Hilfsfunktionen für die Regeln ----------
 -- security definer: laufen ohne RLS, sonst würden sich die Regeln gegenseitig endlos aufrufen.
 
@@ -111,6 +168,30 @@ language sql stable security definer set search_path = public as $$
   )
 $$;
 
+create or replace function public.owns_template(template uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from tracking_templates where id = template and owner_id = auth.uid())
+$$;
+
+-- Vorlage ist einem Team zugewiesen, in dem ich spiele oder das ich trainiere.
+create or replace function public.template_shared_with_me(template uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from template_teams tt
+    where tt.template_id = template and (is_in_team(tt.team_id) or is_trainer_of(tt.team_id))
+  )
+$$;
+
+create or replace function public.spiel_team(spiel uuid) returns uuid
+language sql stable security definer set search_path = public as $$
+  select team_id from spiele where id = spiel
+$$;
+
+create or replace function public.einheit_team(einheit uuid) returns uuid
+language sql stable security definer set search_path = public as $$
+  select team_id from einheiten where id = einheit
+$$;
+
 -- Neues Konto: Profil aus den Angaben bei der Registrierung anlegen.
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
@@ -139,6 +220,9 @@ alter table public.members enable row level security;
 alter table public.einheiten enable row level security;
 alter table public.tracks enable row level security;
 alter table public.compare_requests enable row level security;
+alter table public.tracking_templates enable row level security;
+alter table public.template_teams enable row level security;
+alter table public.spiele enable row level security;
 
 drop policy if exists "eigenes Profil lesen" on public.profiles;
 drop policy if exists "eigenes Profil anlegen" on public.profiles;
@@ -206,5 +290,45 @@ end $$;
 drop trigger if exists compare_requests_status_only on public.compare_requests;
 create trigger compare_requests_status_only before update on public.compare_requests
   for each row execute function public.only_status_changes();
+
+-- Vorlagen: ändern nur der Ersteller, lesen auch alle Teams, denen sie zugewiesen ist.
+drop policy if exists "Vorlagen lesen" on public.tracking_templates;
+drop policy if exists "Vorlagen verwalten" on public.tracking_templates;
+create policy "Vorlagen lesen" on public.tracking_templates for select to authenticated
+  using (owner_id = auth.uid() or template_shared_with_me(id));
+create policy "Vorlagen verwalten" on public.tracking_templates for all to authenticated
+  using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+-- Zuweisen darf nur, wem die Vorlage gehört, und nur an eigene Teams.
+drop policy if exists "Zuweisungen lesen" on public.template_teams;
+drop policy if exists "Zuweisungen verwalten" on public.template_teams;
+create policy "Zuweisungen lesen" on public.template_teams for select to authenticated
+  using (is_trainer_of(team_id) or is_in_team(team_id));
+create policy "Zuweisungen verwalten" on public.template_teams for all to authenticated
+  using (owns_template(template_id) and is_trainer_of(team_id))
+  with check (owns_template(template_id) and is_trainer_of(team_id));
+
+-- Spiele: jeder verwaltet seine eigenen. Ein Team-Spiel darf nur der Trainer des Teams anlegen,
+-- Spieler sehen es dann. Der Trainer sieht auch die Spiele, die Spieler in seinem Team anlegen.
+drop policy if exists "Spiele lesen" on public.spiele;
+drop policy if exists "Spiele verwalten" on public.spiele;
+create policy "Spiele lesen" on public.spiele for select to authenticated
+  using (owner_id = auth.uid() or is_trainer_of(team_id) or (for_team and is_in_team(team_id)));
+create policy "Spiele verwalten" on public.spiele for all to authenticated
+  using (owner_id = auth.uid())
+  with check (
+    owner_id = auth.uid()
+    and (team_id is null or is_trainer_of(team_id) or (not for_team and is_in_team(team_id)))
+  );
+
+-- Spieler laden nach dem Spiel ihre eigenen Daten hoch: dafür dürfen sie die Einheit zu einem Spiel
+-- ihres Teams anlegen und Tracks nur für sich selbst einfügen. Ändern/Löschen bleibt beim Trainer.
+drop policy if exists "Einheit zum Spiel anlegen" on public.einheiten;
+create policy "Einheit zum Spiel anlegen" on public.einheiten for insert to authenticated
+  with check (created_by = auth.uid() and spiel_id is not null and is_in_team(team_id) and spiel_team(spiel_id) = team_id);
+
+drop policy if exists "Eigene Messdaten hochladen" on public.tracks;
+create policy "Eigene Messdaten hochladen" on public.tracks for insert to authenticated
+  with check (is_me(member_id) and member_team(member_id) = team_id and einheit_team(einheit_id) = team_id);
 
 grant select, insert, update, delete on all tables in schema public to authenticated;

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 
 // Seiten über den Hash in der Adresse: #uebersicht, #spieler-<id>, #vergleich, #kader
-export type Route = { page: 'overview' } | { page: 'player'; id?: string } | { page: 'compare' } | { page: 'kader' };
+export type Route = { page: 'overview' } | { page: 'player'; id?: string } | { page: 'compare' } | { page: 'kader' } | { page: 'spiele' };
 
 function readRoute(): Route {
   const hash = decodeURIComponent(window.location.hash.slice(1));
   if (hash.startsWith('spieler')) return { page: 'player', id: hash.slice('spieler-'.length) || undefined };
   if (hash === 'vergleich') return { page: 'compare' };
   if (hash === 'kader') return { page: 'kader' };
+  if (hash === 'spiele') return { page: 'spiele' };
   return { page: 'overview' };
 }
 

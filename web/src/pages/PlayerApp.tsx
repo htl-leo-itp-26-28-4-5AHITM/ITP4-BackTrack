@@ -6,11 +6,12 @@ import type { User } from '../lib/auth';
 import { useClub, withMember, type Club, type Einheit, type Member, type Team } from '../lib/club';
 import { useCompareRequests } from '../lib/compare';
 import { db } from '../lib/db';
-import { CompareIcon, PlayerIcon, TeamIcon } from '../components/Icons';
+import { CompareIcon, PlayerIcon, TeamIcon, TrackingIcon } from '../components/Icons';
 import Shell from '../components/Shell';
 import PlayerPage from './PlayerPage';
 import ComparePage from './ComparePage';
 import TeamPage from './TeamPage';
+import SpielePage from './SpielePage';
 
 interface Props {
   user: User;
@@ -18,11 +19,11 @@ interface Props {
   roleSwitch?: { label: string; onClick: () => void };
 }
 
-type Page = 'me' | 'team' | 'compare';
+type Page = 'me' | 'team' | 'compare' | 'spiele';
 
 function readPage(): Page {
   const h = window.location.hash.slice(1);
-  return h === 'team' ? 'team' : h === 'vergleich' ? 'compare' : 'me';
+  return h === 'team' ? 'team' : h === 'vergleich' ? 'compare' : h === 'spiele' ? 'spiele' : 'me';
 }
 
 function usePage() {
@@ -103,10 +104,12 @@ export default function PlayerApp({ user, onLogout, roleSwitch }: Props) {
 
   const nav = [
     { key: 'me', hash: '', label: 'Meine Daten', icon: <PlayerIcon /> },
+    { key: 'spiele', hash: 'spiele', label: 'Spiele', icon: <TrackingIcon /> },
     { key: 'team', hash: 'team', label: incoming ? `Team (${incoming})` : 'Team', icon: <TeamIcon /> },
     { key: 'compare', hash: 'vergleich', label: 'Vergleich', icon: <CompareIcon /> },
   ];
-  const titles = { me: 'Meine Daten', team: 'Mein Team', compare: 'Vergleich' };
+  const titles = { me: 'Meine Daten', team: 'Mein Team', compare: 'Vergleich', spiele: 'Spiele' };
+  const myTeams = links.map((l) => l.team).filter((t, i, all) => all.findIndex((x) => x.id === t.id) === i);
   const eyebrow =
     page === 'me' && current
       ? [current.team.name, current.einheit.title, `${fmt.date(current.einheit.start)}, ${fmt.time(current.einheit.start)} Uhr`].join(' · ')
@@ -138,6 +141,22 @@ export default function PlayerApp({ user, onLogout, roleSwitch }: Props) {
           choices={mine.map((m) => ({ id: m.trackId, label: entryLabel(m.einheit) }))}
           value={current.trackId}
           onSelect={setSelected}
+        />
+      )}
+
+      {page === 'spiele' && (
+        <SpielePage
+          user={user}
+          club={club}
+          teams={myTeams}
+          meIn={(teamId) => links.find((l) => l.team.id === teamId)?.member}
+          onDataChanged={reload}
+          onOpen={(_game, e) => {
+            const me = links.find((l) => l.team.id === e.teamId)?.member;
+            const entry = e.entries.find((x) => x.memberId === me?.id);
+            if (entry) setSelected(entry.trackId);
+            window.location.hash = '';
+          }}
         />
       )}
 

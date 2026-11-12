@@ -29,6 +29,15 @@ export interface Einheit {
   entries: { memberId: string; trackId: string }[];
 }
 
+// Ziel beim Hochladen nach einem Spiel: die Einheit des Spiels (falls es schon Daten gibt) oder eine neue.
+export interface GameTarget {
+  spielId: string;
+  einheitId?: string;
+  title: string;
+  kind: string;
+  place?: string;
+}
+
 export interface Club {
   teams: Team[];
   einheiten: Einheit[];
@@ -225,8 +234,10 @@ export function useClub() {
     },
 
     // Hochgeladene Dateien einem Team zuordnen: Spieler über den Namen finden oder neu in den Kader aufnehmen.
-    async importInto(teamId: string, result: ImportResult): Promise<Einheit | undefined> {
+    // Mit "game" landen die Daten in der Einheit dieses Spiels (wird beim ersten Hochladen angelegt).
+    async importInto(teamId: string, result: ImportResult, game?: GameTarget): Promise<Einheit | undefined> {
       const now = ref.current;
+      const existing = game?.einheitId ? now.einheiten.find((e) => e.id === game.einheitId) : undefined;
       const team = now.teams.find((t) => t.id === teamId)!;
       const known = new Set(now.einheiten.flatMap((e) => e.entries.map((x) => x.trackId)));
       const members = [...team.members];
@@ -248,37 +259,42 @@ export function useClub() {
       }
       if (!entries.length) return undefined;
 
-      const s = result.session;
-      const einheit: Einheit = {
-        id: uid(),
-        teamId,
-        title: s?.title ?? 'Einheit',
-        kind: s?.kind ?? '',
-        place: s?.place,
-        start: Math.min(...store.map((t) => t.points[0].time)),
-        entries,
-      };
+      const s = game ?? result.session;
+      const einheit: Einheit = existing
+        ? { ...existing, entries: [...existing.entries, ...entries] }
+        : {
+            id: uid(),
+            teamId,
+            title: s?.title ?? 'Einheit',
+            kind: s?.kind ?? '',
+            place: s?.place,
+            start: Math.min(...store.map((t) => t.points[0].time)),
+            entries,
+          };
 
       try {
         if (added.length) check(await supabase.from('members').insert(added.map((m) => memberRow(teamId, m))));
-        check(
-          await supabase.from('einheiten').insert({
-            id: einheit.id,
-            team_id: teamId,
-            title: einheit.title,
-            kind: einheit.kind,
-            place: orNull(einheit.place),
-            start_ms: einheit.start,
-          }),
-        );
+        if (!existing) {
+          check(
+            await supabase.from('einheiten').insert({
+              id: einheit.id,
+              team_id: teamId,
+              title: einheit.title,
+              kind: einheit.kind,
+              place: orNull(einheit.place),
+              start_ms: einheit.start,
+              ...(game ? { spiel_id: game.spielId } : {}),
+            }),
+          );
+        }
         // Einzeln hochladen, damit eine Anfrage nicht zu groß wird.
         for (const t of store) {
           const memberId = entries.find((x) => x.trackId === t.id)!.memberId;
           check(await supabase.from('tracks').insert({ id: t.id, team_id: teamId, einheit_id: einheit.id, member_id: memberId, points: pack(t.points) }));
         }
       } catch (err) {
-        // Halb gespeicherte Einheit wieder entfernen.
-        await supabase.from('einheiten').delete().eq('id', einheit.id);
+        // Halb gespeicherte Einheit wieder entfernen (eine schon bestehende bleibt).
+        if (!existing) await supabase.from('einheiten').delete().eq('id', einheit.id);
         setError(`Hochladen fehlgeschlagen: ${(err as Error).message}`);
         await reload();
         return undefined;
@@ -287,7 +303,7 @@ export function useClub() {
       db.forget(store.map((t) => t.id));
       const next = {
         teams: ref.current.teams.map((t) => (t.id === teamId ? { ...t, members } : t)),
-        einheiten: [...ref.current.einheiten, einheit],
+        einheiten: existing ? ref.current.einheiten.map((e) => (e.id === einheit.id ? einheit : e)) : [...ref.current.einheiten, einheit],
       };
       ref.current = next;
       setClub(next);
